@@ -60,6 +60,7 @@ def checkNamelen():
             print 'we have culprit in name of ', basename
             count+=1
     print 'culprit count ',count,len(vidlist)
+
 def getTaxonomyDictionary(taxonomy):
     mytaxonomy = dict();
     for entry in taxonomy:

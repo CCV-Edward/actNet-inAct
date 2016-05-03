@@ -157,7 +157,6 @@ def main():
     # with open('actNet200-V1-3.pkl','rb') as f:
     #     actNetDB = pickle.load(f)
     
-    
 if __name__=="__main__":
     # checkNamelen()
     main()

@@ -14,7 +14,7 @@ import math
 
 vidDir = "/mnt/sun-alpha/actnet/videos/";
 vidDirtemp = "/mnt/earth-beta/Datasets/actnet/videos/";
-imgDir = "/mnt/earth-beta/Datasets/actnet/images/";
+imgDir = "/mnt/earth-beta/Datasets/actnet/rgb-images/";
 annotFile = "../anetv13.json"
 
 def getAnnotations():
@@ -57,20 +57,20 @@ def convertVideos():
     print "this is convertVideos function"
     vidDir = vidDirtemp
     vidlist = os.listdir(vidDir)
-    vidlist = [vid for vid in vidlist if vid.endswith(".mp4")]
+    vidlist = [vid for vid in vidlist if vid.startswith("v_")]
     print "Number of sucessfully donwloaded ",len(vidlist)
-    vcount =0
-    for videname in vidlist:
+    vcount =216
+    for videname in reversed(vidlist):
         src = vidDir+videname
         numf,width,height,fps = getVidedInfo(src)
         newW,newH = getsmallestDimto256(width,height)
         print 'old width height were ',width,height,' and newer are ',newW,newH, ' fps ',fps,' numf ', numf, ' vcount  ',vcount
-        vcount+=1
+        vcount-=1
         framecount = 0;
         storageDir = imgDir+videname.split('.')[0]+"/"
         imgname = storageDir+str(numf-1).zfill(5)+".jpg"
         if not os.path.isfile(imgname):
-            cap = cv2.VideoCapture(filename)
+            cap = cv2.VideoCapture(src)
             if cap.isOpened():
                 if not os.path.isdir(storageDir):
                     os.mkdir(storageDir)

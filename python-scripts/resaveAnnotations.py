@@ -18,7 +18,7 @@ import json
 import shutil
 
 vidDir = "/mnt/sun-alpha/actnet/videos/";
-imgDir = "/mnt/earth-beta/Datasets/actnet/images/";
+imgDir = "/mnt/earth-beta/Datasets/actnet/rgb-images/";
 annotFile = "../Evaluation/data/activity_net.v1-3.min.json"
 
 
@@ -108,51 +108,57 @@ def main():
     ecount = 0;
     newdatabase = dict();
     verbose = 0
+    nullcount = 0;
+    nullvids = [];
     for videoID in database.keys():
             ecount+=1
-        # if ecount<2:
             videoname = vidDir+'v_'+videoID+'.mp4'
+            if not os.path.isfile(videoname):
+                videoname = vidDir+'v_'+videoID+'.mkv'    
             print 'doing ',videoname,' ecount ',ecount
             vidinfo = database[videoID]
+            mydict = {'isnull':0}
             if os.path.isfile(videoname):
-                mydict = {'isnull':0}
-                numf,width,height,fps = getVidedInfo(videoname)
-                if verbose:
-                    print numf,width,height,fps
-                storageDir = imgDir+'v_'+videoID+"/"
-                imgname = storageDir+str(0).zfill(5)+".jpg"
-                image = cv2.imread(imgname)
-                height,width,depth = np.shape(image)
-                newres = [height,width];
-                mydict['newResolution'] = newres;
-                mydict['numf'] = numf;
-                mydict['fps'] = fps;
-                myannot = [];                
-                for vidfield in vidinfo.keys():
-                    if vidfield == 'annotations':
-                        for annot in vidinfo[vidfield]:
-                            tempsegment = dict()
-                            tempsegment['segment'] = annot['segment']
-                            tempsegment['label'] = annot['label']
-                            segment = annot['segment'];
-                            tempsegment['sf'] = max(int(segment[0]*fps),0)
-                            tempsegment['ef'] = min(int(segment[1]*fps),numf)
-                            tempsegment['nodeid'] = actionIDs[annot['label']]['nodeId']
-                            tempsegment['class'] = actionIDs[annot['label']]['class']
-                            myannot.append(tempsegment)
-                    else:
-                        mydict[vidfield] = vidinfo[vidfield]
-                mydict['annotations'] = myannot
+                    numf,width,height,fps = getVidedInfo(videoname)
+                    if verbose:
+                        print numf,width,height,fps
+                    storageDir = imgDir+'v_'+videoID+"/"
+                    imgname = storageDir+str(0).zfill(5)+".jpg"
+                    image = cv2.imread(imgname)
+                    height,width,depth = np.shape(image)
+                    newres = [height,width];
+                    mydict['newResolution'] = newres;
+                    mydict['numf'] = numf;
+                    mydict['fps'] = fps;
+                    myannot = [];                
+                    for vidfield in vidinfo.keys():
+                        if vidfield == 'annotations':
+                            for annot in vidinfo[vidfield]:
+                                tempsegment = dict()
+                                tempsegment['segment'] = annot['segment']
+                                tempsegment['label'] = annot['label']
+                                segment = annot['segment'];
+                                tempsegment['sf'] = max(int(segment[0]*fps),0)
+                                tempsegment['ef'] = min(int(segment[1]*fps),numf)
+                                tempsegment['nodeid'] = actionIDs[annot['label']]['nodeId']
+                                tempsegment['class'] = actionIDs[annot['label']]['class']
+                                myannot.append(tempsegment)
+                        else:
+                            mydict[vidfield] = vidinfo[vidfield]
+                    mydict['annotations'] = myannot
             else:
                 mydict = vidinfo;
                 mydict['isnull'] = 1
-            
+                nullcount+=1
+                nullvids.append(videoname)
             newdatabase[videoID] = mydict
 
         
+    print nullcount
+    print nullvids
     actNetDB = {'actionIDs':actionIDs,'version':version,'taxonomy':mytaxonomy,'database':newdatabase}
     
-    with open('actNet200-V1-3.pkl','wb') as f:
+    with open('../Evaluation/data/actNet200-V1-3.pkl','wb') as f:
         pickle.dump(actNetDB,f)
 
     # with open('actNet200-V1-3.pkl','rb') as f:

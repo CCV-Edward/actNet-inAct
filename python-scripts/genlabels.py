@@ -13,7 +13,9 @@ import pickle
 import os
 import shutil
 subset = 'training'
-subset = 'validation'
+import cv2 as cv2
+import time
+#subset = 'validation'
 
 baseDir = "/mnt/earth-beta/Datasets/actnet/";
 imgDir = "/mnt/earth-beta/Datasets/actnet/rgb-images/";
@@ -47,11 +49,9 @@ def writelabels():
     
     for videoId in database.keys():
         ecount+=1
+        
         if ecount>=0:
-            # labeldir = baseDir+'labels/v_'+videoId+'/'
             imgDirV = imgDir+'v_'+videoId+'/'
-            # if not os.path.isdir(labeldir):
-            #     os.mkdir(labeldir)
             videoInfo = database[videoId]
             
             if not videoInfo['isnull'] and videoInfo['subset'] == subset:
@@ -59,8 +59,9 @@ def writelabels():
                 print imgDirV,' ecount ',ecount,videoInfo['subset'],' vcount ',vcount
                 numfs = videoInfo['numf']
                 framelabels = np.ones(numfs,dtype='uint16')*200;
-                framelabelstemp = np.ones(numfs,dtype='uint16')*200;
                 annotations = videoInfo['annotations']
+                framelabelstemp = np.ones(numfs,dtype='uint16')*200;
+                
                 bgcount = numfs;
                 for annot in annotations:
                     actionId = annot['class']
@@ -92,6 +93,74 @@ def writelabels():
     # actionframecount[200]/=100
     # plt.bar(ind,actionframecount)
     # plt.show()
+def checkmogrify():
+    with open(annotPklFile,'rb') as f:
+         actNetDB = pickle.load(f)
+    ind = np.arange(0,201)     
+    actionIDs = actNetDB['actionIDs']; taxonomy=actNetDB['taxonomy']; database = actNetDB['database'];
+
+    ecount = 0;
+    vcount=0;
+    
+    for videoId in reversed(database.keys()):
+        ecount+=1
+        if ecount>=0:
+            imgDirV = imgDir+'v_'+videoId+'/'
+            videoInfo = database[videoId]
+            if not videoInfo['subset'] == 'testing':
+                print imgDirV,' ecount ',ecount,videoInfo['subset'],' vcount ',vcount,
+                numfs = videoInfo['numf']
+                framelabels = np.ones(numfs,dtype='uint16')*200;
+                annotations = videoInfo['annotations']
+                for annot in annotations:
+                    actionId = annot['class']
+                    startframe = annot['sf']
+                    endframe = annot['ef']
+                    framelabels[startframe:endframe] = int(actionId)-1
+                    
+                label = framelabels[0]
+                dst = imgDirV+str(0).zfill(5)+'-ActId'+str(label).zfill(3)+'.jpg'
+                if os.path.isfile(dst):
+                    image = cv2.imread(dst)
+                    (w,h,d) = np.shape(image)
+                    if w == h and h==256:
+                        vcount+=1
+                    else:
+                        print w,h
+                    
+        
+def mymogrify():
+    with open(annotPklFile,'rb') as f:
+         actNetDB = pickle.load(f)     
+    actionIDs = actNetDB['actionIDs']; taxonomy=actNetDB['taxonomy']; database = actNetDB['database'];
+
+    ecount = 0;
+    vcount=0;
+    
+    for videoId in reversed(database.keys()):        
+        ecount+=1
+        if ecount>14:
+            videoInfo = database[videoId]
+            if not videoInfo['subset'] == 'testing':
+                vst = time.time()
+                imgDirV = imgDir+'v_'+videoId+'/'
+                print imgDirV,' ecount ',ecount,videoInfo['subset'],' vcount ',vcount,
+                numfs = videoInfo['numf']
+                tempimglist = os.listdir(imgDirV)
+                imglist = [imgDirV+img for img in tempimglist if img.endswith('.jpg')]
+                dst = imglist[0]
+                image = cv2.imread(dst)
+                (w,h,d) = np.shape(image)
+                if w == h and h==256:
+                    vcount+=1
+                else:
+                    for dst in imglist:
+                        image = cv2.imread(dst)
+                        resizedimage = cv2.resize(image,(256,256))
+                        cv2.imwrite(dst,resizedimage)
+                vet  = time.time()
+                print ' time taken ', int(vet-vst), ' seconds'
+        
     
 def writeImgNamestofile(fid,imglist,index=[]):
     if len(index)==0:
@@ -125,11 +194,12 @@ def genimglist(fid,subset,max1,max2):
             writeImgNamestofile(fid,actionImagelist)
     
 def genJointList():
-    # trainlist = baseDir+'lists/{}-all.list'.format(subset)
-    trainlist = baseDir+'lists/{}-{}-small.list'.format('train','valid')
+    trainlist = baseDir+'lists/{}-small.list'.format(subset)
+#    trainlist = baseDir+'lists/{}-{}-small.list'.format('train','valid')
     fid = open(trainlist,'wb');
-    genimglist(fid,'training',25000,40000)
-    genimglist(fid,'validation',12000,20000)
+    genimglist(fid,'training',15000,20000)
+
+#    genimglist(fid,'validation',7000,10000)
     fid.close()
 def genertalabels():
     labellist = baseDir+'lists/labels.list'
@@ -142,4 +212,6 @@ if __name__=="__main__":
     # writelabels()
     # genimglist()
     # genJointList()
-    genertalabels()
+#    genertalabels()
+    # checkmogrify()
+    mymogrify()

@@ -10,7 +10,8 @@ import numpy as np
 import cv2 as cv2
 import math,pickle,shutil,os
 
-vidDir = "/mnt/sun-alpha/actnet/videos/";
+baseDir = "/mnt/sun-alpha/actnet/";
+vidDir = "/mnt/earth-beta/actnet/videos/";
 imgDir = "/mnt/sun-alpha/actnet/rgb-images/";
 annotPklFile = "../Evaluation/data/actNet200-V1-3.pkl"
 #os.mkdir(imgDir)
@@ -64,6 +65,7 @@ def getframelabels(annotations,numf):
         endframe = annot['ef']
         framelabels[startframe:endframe] = int(actionId)-1
     return framelabels
+
 def movefiles(storageDir,framelabels,numfs):
     dst = ''
     for ind in range(numfs):
@@ -84,7 +86,7 @@ def convertVideosL():
             videoInfo = database[videoId]
             storageDir = imgDir+'v_'+videoId+"/"
             print videoInfo['subset'] 
-            if not videoInfo['isnull'] and videoInfo['subset'] == 'validation':
+            if not videoInfo['isnull'] and not videoInfo['subset'] == 'testing':
                 videoname = vidDir+'v_'+videoId+'.mp4'
                 if not os.path.isfile(videoname):
                     videoname = vidDir+'v_'+videoId+'.mkv' 
@@ -125,7 +127,58 @@ def convertVideosL():
             
                    
 
-
+def convertTestVideos():
+    print "this is convertVideos function with labels"
+    ecount = 0
+    with open(annotPklFile,'rb') as f:
+         actNetDB = pickle.load(f)
+    actionIDs = actNetDB['actionIDs']; taxonomy=actNetDB['taxonomy']; database = actNetDB['database'];
+    for videoId in database.keys():
+        ecount+=1
+        if ecount>0:
+            videoInfo = database[videoId]
+            storageDir = imgDir+'v_'+videoId+"/"
+            print videoInfo['subset'] 
+            if not videoInfo['isnull'] and videoInfo['subset'] == 'testing':
+                videoname = vidDir+'v_'+videoId+'.mp4'
+                if not os.path.isfile(videoname):
+                    videoname = vidDir+'v_'+videoId+'.mkv' 
+                print storageDir,' ecount ',ecount,videoInfo['subset']
+                numfs = videoInfo['numf']
+                
+                # annotations = videoInfo['annotations']
+                framelabels = np.ones(numfs,dtype='uint16')*200;
+                imgname = storageDir+str(numfs-1).zfill(5)+".jpg"
+                if os.path.isfile(imgname):
+                    movefiles(storageDir,framelabels,numfs)
+                else:
+                    dst = storageDir+str(numfs-1).zfill(5)+'-ActId'+str(framelabels[-1]).zfill(3)+'.jpg'
+                    if not os.path.isfile(dst):
+                        numf,width,height,fps,cap = getVidedInfo(videoname)
+                        if not cap == -1 and numf == numfs:
+                            newW=256;newH=256;
+                            framecount = 0;
+                            if cap.isOpened():
+                                if not os.path.isdir(storageDir):
+                                    os.mkdir(storageDir)
+                                
+                                for ind in xrange(numf):
+                                    label = framelabels[ind]
+                                    dst = storageDir+str(ind).zfill(5)+'-ActId'+str(label).zfill(3)+'.jpg'
+                                    retval,image = cap.read()
+                                    if not image is None:
+                                        resizedImage = cv2.resize(image,(newW,newH))
+                                        cv2.imwrite(dst,resizedImage)
+                                    else:
+                                        cv2.imwrite(dst,resizedImage)
+                                        print ' . ',
+                                print dst , 'is created'
+                        else:
+                            with open('vids/'+videoId+'.txt','wb') as f:
+                                f.write('error')
+                    else:
+                        print dst , 'is already there'
+           
 def convertVideos():
     print "this is convertVideos function"
 ##    vidDir = vidDirtemp
@@ -165,8 +218,51 @@ def convertVideos():
                 with open('vids/'+videname.split('.')[0]+'.txt','wb') as f:
                     f.write('error')
             
-                    
+def getframelabels4both(annotations,numf,subset):
+    framelabels = np.ones(numf,dtype='uint16')*200;
+    if subset == 'testing':
+        return framelabels
+    for annot in annotations:
+        actionId = annot['class']
+        startframe = annot['sf']
+        endframe = annot['ef']
+        framelabels[startframe:endframe] = int(actionId)-1
+    return framelabels
+
+                 
+def genVideoImageLists():
+    subset = 'testing'
+    print "this is genVideoImageLists function"
+    ecount = 0; vcount = 0;
+    listname = '{}lists/{}.list'.format(baseDir,subset)
+    fid = open(listname,'wb')
+    with open(annotPklFile,'rb') as f:
+         actNetDB = pickle.load(f)
+    actionIDs = actNetDB['actionIDs']; taxonomy=actNetDB['taxonomy']; database = actNetDB['database'];
     
+    for videoId in database.keys():
+        ecount+=1
+        if ecount>0:
+            videoInfo = database[videoId]
+            if not videoInfo['isnull'] and videoInfo['subset'] == subset:
+                vcount+=1
+                storageDir = imgDir+'v_'+videoId+"/"
+                videlistName = '{}lists/{}/v_{}.list'.format(baseDir,subset,videoId)
+                fid.write(videlistName+'\n');
+                vfid = open(videlistName,'wb');
+                print storageDir,' ecount ',ecount,videoInfo['subset']
+                numfs = videoInfo['numf']
+                annotations = videoInfo['annotations']
+                framelabels = getframelabels4both(annotations,numfs,subset)
+                dst = storageDir+str(numfs-1).zfill(5)+'-ActId'+str(framelabels[-1]).zfill(3)+'.jpg'
+                if os.path.isfile(dst):
+                    for ind in xrange(numfs):
+                        label = framelabels[ind]
+                        dst = storageDir+str(ind).zfill(5)+'-ActId'+str(label).zfill(3)+'.jpg'
+                        vfid.write(dst+'\n')
+                else:
+                    RuntimeError('check if file exists '+dst)
+               
 def checkConverted():
     print "this is checkConverted videos function"    
     vidlist = os.listdir(vidDir)
@@ -187,4 +283,6 @@ def checkConverted():
 
 if __name__=="__main__":
     # checkConverted()
-    convertVideosL()
+    # convertVideosL()
+    # convertTestVideos()
+    genVideoImageLists()

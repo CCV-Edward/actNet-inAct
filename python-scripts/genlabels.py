@@ -12,13 +12,15 @@ import numpy as np
 import pickle
 import os
 import shutil
-subset = 'training'
+
 import cv2 as cv2
 import time
 #subset = 'validation'
+subset = 'training'
 
-baseDir = "/mnt/earth-beta/Datasets/actnet/";
-imgDir = "/mnt/earth-beta/Datasets/actnet/rgb-images/";
+baseDir = "/mnt/sun-alpha/actnet/";
+imgDir = "/mnt/sun-alpha/actnet/rgb-images/";
+# imgDir = "/mnt/DATADISK2/ss-workspace/actnet/rgb-images/";
 annotPklFile = "../Evaluation/data/actNet200-V1-3.pkl"
     
 def getNumFrames(filename):
@@ -38,6 +40,7 @@ def getTaxonomyDictionary(taxonomy):
 
     
 def writelabels():
+    subset = 'training'
     with open(annotPklFile,'rb') as f:
          actNetDB = pickle.load(f)
     ind = np.arange(0,201)     
@@ -49,56 +52,40 @@ def writelabels():
     
     for videoId in database.keys():
         ecount+=1
-        
         if ecount>=0:
             imgDirV = imgDir+'v_'+videoId+'/'
             videoInfo = database[videoId]
-            
             if not videoInfo['isnull'] and videoInfo['subset'] == subset:
                 vcount+=1
                 print imgDirV,' ecount ',ecount,videoInfo['subset'],' vcount ',vcount
                 numfs = videoInfo['numf']
                 framelabels = np.ones(numfs,dtype='uint16')*200;
                 annotations = videoInfo['annotations']
-                framelabelstemp = np.ones(numfs,dtype='uint16')*200;
-                
                 bgcount = numfs;
                 for annot in annotations:
                     actionId = annot['class']
                     startframe = annot['sf']
                     endframe = annot['ef']
                     framelabels[startframe:endframe] = int(actionId)-1
-                    framelabelstemp[startframe:endframe] = int(actionId)
                     actionframecount[actionId-1]+=endframe-startframe
-                    bgcount-=endframe-startframe
                 actionframecount[200]+=bgcount;
-            
-            
+
                 for ind,label in enumerate(framelabels):
-                    # src = imgDirV+str(ind).zfill(5)+'.jpg'
-                    # tempdst = imgDirV+str(ind).zfill(5)+'-ActId'+str(framelabelstemp[ind]).zfill(3)+'.jpg'
                     dst = imgDirV+str(ind).zfill(5)+'-ActId'+str(label).zfill(3)+'.jpg'
-                    # if os.path.isfile(tempdst):
-                    #     src = tempdst
-                    # shutil.move(src,dst)
                     imagelists[label].append(dst)
                     
         
-    filename = baseDir+'lists/{}ImageLists.pkl'.format(subset)
+    filename = baseDir+'lists/{}-ImageLists.pkl'.format(subset)
     print 'save imglist in ',filename
     with open(filename,'wb') as f:
         pickle.dump(imagelists,f)
-    # # # 
-    # print actionframecount
-    # actionframecount[200]/=100
-    # plt.bar(ind,actionframecount)
-    # plt.show()
+        
 def checkmogrify():
     with open(annotPklFile,'rb') as f:
          actNetDB = pickle.load(f)
     ind = np.arange(0,201)     
+    
     actionIDs = actNetDB['actionIDs']; taxonomy=actNetDB['taxonomy']; database = actNetDB['database'];
-
     ecount = 0;
     vcount=0;
     
@@ -162,18 +149,11 @@ def mymogrify():
                 print ' time taken ', int(vet-vst), ' seconds'
         
     
-def writeImgNamestofile(fid,imglist,index=[]):
-    if len(index)==0:
-        for imgname in imglist:
-            fid.write(imgname+'\n')
-    else:
-        for ind in index:
-            imgname = imglist[ind]
-            fid.write(imgname+'\n')
+
             
 def genimglist(fid,subset,max1,max2):
     maxallowed = max1;
-    filename = baseDir+'lists/{}ImageLists.pkl'.format(subset)
+    filename = baseDir+'lists/{}-ImageLists.pkl'.format(subset)
     print 'loading imglist from ',filename
     with open(filename,'rb') as f:
         imagelists = pickle.load(f)
@@ -192,26 +172,41 @@ def genimglist(fid,subset,max1,max2):
         else:
             print ' ok'
             writeImgNamestofile(fid,actionImagelist)
-    
-def genJointList():
-    trainlist = baseDir+'lists/{}-small.list'.format(subset)
-#    trainlist = baseDir+'lists/{}-{}-small.list'.format('train','valid')
-    fid = open(trainlist,'wb');
-    genimglist(fid,'training',15000,20000)
 
-#    genimglist(fid,'validation',7000,10000)
+def writeImgNamestofile(fid,imglist,index=[]):
+    if len(index)==0:
+        for imgname in imglist:
+            fid.write(imgname+'\n')
+    else:
+        for ind in index:
+            imgname = imglist[ind]
+            fid.write(imgname+'\n')
+
+def genJointList():
+    trainlist = baseDir+'lists/{}-{}-tiny.list'.format('train','valid')
+    fid = open(trainlist,'wb');
+    genimglist(fid,'training',50000,70000)
+    genimglist(fid,'validation',25000,35000)
     fid.close()
+    
+def genlists():
+    subset = 'training'
+    subset = 'validation'
+    trainlist = baseDir+'lists/{}-teenytiny.list'.format(subset)
+    fid = open(trainlist,'wb')
+    genimglist(fid,subset,10,15)
+    
 def genertalabels():
     labellist = baseDir+'lists/labels.list'
     fid = open(labellist,'wb');
     for label in range(201):
         fid.write('ActId'+str(label).zfill(3)+'\n')
     
-
 if __name__=="__main__":
     # writelabels()
     # genimglist()
+    genlists()
     # genJointList()
-#    genertalabels()
+    # genertalabels()
     # checkmogrify()
-    mymogrify()
+    # mymogrify()

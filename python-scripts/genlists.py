@@ -35,6 +35,29 @@ def genvideolists():
                 vidname = 'v_'+videoId+'\n'
                 fid.write(vidname)
     fid.close()
-    
+def genlabelnames():
+    subset = 'training'
+    with open(annotPklFile,'rb') as f:
+         actNetDB = pickle.load(f)
+    actionIDs = actNetDB['actionIDs']; taxonomy=actNetDB['taxonomy']; database = actNetDB['database'];
+    names = [ [] for i in range(200)]
+    for videoId in database.keys():
+            videoInfo = database[videoId]
+            if not videoInfo['isnull'] and videoInfo['subset'] == subset:
+                numfs = videoInfo['numf']
+                annotations = videoInfo['annotations']
+                for annot in annotations:
+                    # print annot
+                    actionId = annot['class']
+                    startframe = annot['sf']
+                    endframe = annot['ef']
+                    actionname = annot['label']
+                    names[actionId-1] = actionname
+    fid = open(baseDir+'lists/gtnames.list','w')
+    for name in names:
+        fid.write(name+'\n')
+        
+                    
 if __name__=="__main__":
-    genvideolists()
+    # genvideolists()
+    genlabelnames()

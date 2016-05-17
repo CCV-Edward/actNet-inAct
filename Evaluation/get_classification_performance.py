@@ -2,13 +2,14 @@ import argparse
 
 from eval_classification import ANETclassification
 
-def main(ground_truth_filename, prediction_filename,
+def getscore(ground_truth_filename, prediction_filename,
          subset='validation', verbose=True, check_status=True):
     anet_classification = ANETclassification(ground_truth_filename,
                                              prediction_filename,
                                              subset=subset, verbose=verbose,
                                              check_status=True)
     anet_classification.evaluate()
+    return anet_classification.ap,anet_classification.hit_at_k,anet_classification.avg_hit_at_k
 
 def parse_input():
     description = ('This script allows you to evaluate the ActivityNet '
@@ -29,4 +30,4 @@ def parse_input():
 
 if __name__ == '__main__':
     args = parse_input()
-    main(**vars(args))
+    ap,hitk,avgHitk = getscore(**vars(args))

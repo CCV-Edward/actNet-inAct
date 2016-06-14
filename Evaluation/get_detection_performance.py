@@ -22,7 +22,7 @@ def parse_input():
     p.add_argument('--subset', default='validation',
                    help=('String indicating subset to evaluate: '
                          '(training, validation)'))
-    p.add_argument('--tiou_thr', type=float, default=0.5,
+    p.add_argument('--tiou_thr', type=float, default=0.1,
                    help='Temporal intersection over union threshold.')
     p.add_argument('--verbose', type=bool, default=True)
     p.add_argument('--check_status', type=bool, default=True)

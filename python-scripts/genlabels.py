@@ -12,7 +12,7 @@ import numpy as np
 import pickle
 import os
 import shutil
-
+from sklearn.ensemble import RandomForestClassifier
 import cv2 as cv2
 import time
 #subset = 'validation'
@@ -22,7 +22,22 @@ baseDir = "/mnt/sun-alpha/actnet/";
 imgDir = "/mnt/sun-alpha/actnet/rgb-images/";
 # imgDir = "/mnt/DATADISK2/ss-workspace/actnet/rgb-images/";
 annotPklFile = "../Evaluation/data/actNet200-V1-3.pkl"
-    
+
+def getVideolabels():
+    actionIDs,taxonomy,database = readannos()
+    labels = dict();
+    print 'we are here'
+    for videoId in database.keys():
+        videoInfo = database[videoId]
+        annotations = videoInfo['annotations']
+        for annot in annotations:
+            actionId = annot['class']-1;
+        labels[videoId] = actionId
+    saveName = '{}data/labels.pkl'.format(baseDir)
+    print 'save as ',saveName
+    with open(saveName,'w') as f:
+        pickle.dump(labels,f)
+        
 def getNumFrames(filename):
     cap = cv2.VideoCapture(filename)
     if not cap.isOpened(): 

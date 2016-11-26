@@ -117,6 +117,7 @@ def main():
                 videoname = vidDir+'v_'+videoID+'.mkv'    
             print 'doing ',videoname,' ecount ',ecount
             vidinfo = database[videoID]
+	    print vidinfo
             mydict = {'isnull':0}
             if os.path.isfile(videoname):
                     numf,width,height,fps = getVidedInfo(videoname)

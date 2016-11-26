@@ -39,25 +39,26 @@ def getTaxonomyDictionary(taxonomy):
     return mytaxonomy
 
 def checkcvof():
-    dirlist = os.listdir(imgDir)
+    dirlist = os.listdir(rgbdir)
     dirlist = [d for d in dirlist if d.startswith('v_')]
     print 'number of directoires are ',len(dirlist)
     imgsdone = 0;
     vidsdone = 0;
     vcount = 0;
-    for d in reversed(dirlist):
+    for d in dirlist:
         vcount +=1
         if vidsdone>-1:
-            imglist = os.listdir(imgDir+d)
-            imglist = [img for img in imglist if img.endswith('.jpg')]
-            done = len(imglist)
-            if done>0:
-                imgsdone += done
+            savedir = imgDir+d
+            # imglist = [img for img in imglist if img.endswith('.jpg')]
+            # done = len(imglist)
+            if os.path.isdir(savedir):
                 vidsdone += 1
-                print 'Vcount ',vcount,' videos done ',vidsdone,' imgsdone ',imgsdone
+                print 'Vcount ',vcount,' videos done ',vidsdone
             else:
                 dst = smdir+d+'/';
+                print 'Vcount ',vcount,' dst ',dst
                 if not os.path.isdir(dst):
+                
                     # shutil.rmtree(dst)
                     src = rgbdir+d+'/';
                     t1 = time.time()

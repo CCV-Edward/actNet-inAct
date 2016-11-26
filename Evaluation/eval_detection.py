@@ -16,7 +16,7 @@ class ANETdetection(object):
     def __init__(self, ground_truth_filename=None, prediction_filename=None,
                  ground_truth_fields=GROUND_TRUTH_FIELDS,
                  prediction_fields=PREDICTION_FIELDS,
-                 tiou_thr=0.5, subset='validation', verbose=False, 
+                 tiou_thr=0.1, subset='validation', verbose=False, 
                  check_status=True):
         if not ground_truth_filename:
             raise IOError('Please input a valid ground truth file.')

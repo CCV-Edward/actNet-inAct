@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 import os
 import time,json
-import pylab as plt
+#import pylab as plt
 
 baseDir = "/mnt/sun-alpha/actnet/";
 imgDir = "/mnt/sun-alpha/actnet/rgb-images/";
@@ -51,6 +51,7 @@ def getpredications(subset,imgtype,weight,vidname):
             wcount+=1
         lcount +=1
     return labels,preds
+
 def gettopklabel(preds,k,classtopk):
     scores = np.zeros(200)
     topk = min(classtopk,np.shape(preds)[1]);
@@ -68,44 +69,50 @@ def gettopklabel(preds,k,classtopk):
     
 def processPredictions():
     weight = 30000;
-    subset = 'validation'
-    imgtype = 'rgb'
-    K = 3;
-    for classtopk in [50,100,200,500]:
-        names = getnames()
-        actionIDs,taxonomy,database = readannos()
-        listname = baseDir+'lists/videolist-'+subset+'.list'
-        fid = open(listname,'wb');
-        vcount = 0;
-        vdata = {};
-        vdata['external_data'] = {'used':True, 'details':"We use darknet's (extraction net) imagent pretrained weights"}
-        vdata['version'] = "VERSION 1.3"
-        results = {}
-        for videoId in database.keys():
-                videoInfo = database[videoId]
-                if videoInfo['subset'] == subset:
-                    if vcount <2:
-                        vidresults = []
-                        vcount+=1
-                        vidname = 'v_'+videoId
-                        print 'processing ', vidname, ' vcount ',vcount
-                        gtlabels,preds = getpredications(subset,imgtype,weight,vidname)
-                        labels,scores = gettopklabel(preds,K)
-                        print labels
-                        print scores
-                        for idx in range(K):
-                            score = scores[idx]
-                            if score>0.015:
-                                label = labels[idx]
-                                name = names[label]
-                                tempdict = {'label':name,'score':score}
-                                vidresults.append(tempdict)
-                        results[videoId] = vidresults
-        vdata['results'] = results
-        # print vdata
-        outfilename = '{}results/{}-{}-{}-K{}-clsk{}.json'.format(baseDir,subset,imgtype,
-                            str(weight).zfill(5),str(K).zfill(3),str(classtopk).zfill(4))
-        with open(outfilename,'wb') as f:
-            json.dump(vdata,f)
+    imgtype = 'rgb';
+    for K in [5,10]:
+        for subset in ['validation','testing']:
+            if subset == 'testing':
+                weight = 40000
+            else:
+                weight = 30000
+            for classtopk in [150,250,300]:
+                outfilename = '{}results/classification/{}-{}-{}-K{}-clsk{}.json'.format(baseDir,subset,imgtype,
+                                    str(weight).zfill(5),str(K).zfill(3),str(classtopk).zfill(4))
+                if not os.path.isfile(outfilename):
+                    names = getnames()
+                    actionIDs,taxonomy,database = readannos()
+                    listname = baseDir+'lists/videolist-'+subset+'.list'
+                    fid = open(listname,'wb');
+                    vcount = 0;
+                    vdata = {};
+                    vdata['external_data'] = {'used':True, 'details':"We use darknet's (extraction net) imagent pretrained weights"}
+                    vdata['version'] = "VERSION 1.3"
+                    results = {}
+                    for videoId in database.keys():
+                            videoInfo = database[videoId]
+                            if videoInfo['subset'] == subset:
+                                if vcount >-1:
+                                    vidresults = []
+                                    vcount+=1
+                                    vidname = 'v_'+videoId
+                                    print 'processing ', vidname, ' vcount ',vcount ,' classtopk ',classtopk
+                                    gtlabels,preds = getpredications(subset,imgtype,weight,vidname)
+                                    labels,scores = gettopklabel(preds,K,classtopk)
+                                    print labels
+                                    print scores
+                                    for idx in range(K):
+                                        score = scores[idx]
+                                        if score>0.05:
+                                            label = labels[idx]
+                                            name = names[label]
+                                            tempdict = {'label':name,'score':score}
+                                            vidresults.append(tempdict)
+                                    results[videoId] = vidresults
+                    vdata['results'] = results
+                    # print vdata
+                    
+                    with open(outfilename,'wb') as f:
+                        json.dump(vdata,f)
 if __name__=="__main__":
     processPredictions()

@@ -155,6 +155,7 @@ class ANETdetection(object):
             print '[RESULTS] Performance on ActivityNet detection task.'
             print '\tMean Average Precision: {}'.format(ap.mean())
         self.ap = ap
+        return self.ap
 
 def compute_average_precision_detection(ground_truth, prediction, tiou_thr=0.5):
     """Compute average precision (detection task) between ground truth and

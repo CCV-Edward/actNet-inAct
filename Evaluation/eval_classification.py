@@ -228,6 +228,7 @@ def compute_video_hit_at_k(ground_truth, prediction, top_k=3, avg=False):
     acc : float
         Top k accuracy score.
     """
+    
     video_ids = np.unique(ground_truth['video-id'].values)
     avg_hits_per_vid = np.zeros(video_ids.size)
     for i, vid in enumerate(video_ids):
